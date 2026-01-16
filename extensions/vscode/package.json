@@ -1,0 +1,76 @@
+{
+  "name": "code-ai",
+  "displayName": "Code AI",
+  "description": "AI-powered code completions and suggestions powered by Code AI",
+  "version": "0.1.0",
+  "publisher": "CodeAI",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Formatters"
+  ],
+  "activationEvents": [
+    "onLanguage:python",
+    "onLanguage:javascript",
+    "onLanguage:typescript"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": [
+      {
+        "title": "Code AI",
+        "properties": {
+          "codeAI.apiKey": {
+            "type": "string",
+            "default": "",
+            "description": "API key for Code AI service",
+            "scope": "window"
+          },
+          "codeAI.apiEndpoint": {
+            "type": "string",
+            "default": "http://localhost:8000",
+            "description": "Code AI API endpoint",
+            "scope": "window"
+          },
+          "codeAI.enableCompletion": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable code completions"
+          },
+          "codeAI.maxTokens": {
+            "type": "integer",
+            "default": 100,
+            "description": "Maximum tokens for completions"
+          }
+        }
+      }
+    ],
+    "commands": [
+      {
+        "command": "codeAI.setApiKey",
+        "title": "Set Code AI API Key"
+      },
+      {
+        "command": "codeAI.getUsage",
+        "title": "Show Code AI Usage"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.0.0"
+  }
+}

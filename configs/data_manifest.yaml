@@ -1,0 +1,17 @@
+# Example dataset manifest config
+sources:
+  - name: CodeSearchNet
+    type: public
+    license: apache-2.0
+    path: data/raw/codesearchnet
+  - name: HumanEval
+    type: dataset
+    license: 'MIT'
+    path: data/raw/humaneval
+filters:
+  license_allowlist: ["mit", "bsd-3-clause", "apache-2.0"]
+  exclude_patterns: ['node_modules', '.git']
+scrub:
+  run_secret_detection: true
+  run_pii_detection: true
+  redact: true

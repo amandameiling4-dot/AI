@@ -1,0 +1,4 @@
+# Development requirements (optional)
+# Optional ML-based PII detection
+spacy>=3.0.0
+# For spaCy English model, install: python -m spacy download en_core_web_sm

@@ -1,0 +1,2 @@
+{"id": "sample_1", "source": "local_example", "path": "examples/foo.py", "language": "python", "license": "MIT", "content": "def add(a, b):\n    return a + b\n"}
+{"id": "sample_2", "source": "local_example", "path": "examples/bar.js", "language": "javascript", "license": "MIT", "content": "function add(a, b) { return a + b }\n"}

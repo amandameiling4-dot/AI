@@ -1,0 +1,3 @@
+# Monitoring requirements
+prometheus-client>=0.17.0
+python-json-logger>=2.0.0
