@@ -21,10 +21,10 @@ Authorization: Bearer YOUR_API_KEY
 ```bash
 curl -X POST https://api.codeai.example.com/billing/subscribe \
   -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com"}'
+  -d '{"price_id": "price_1234567890", "customer_email": "user@example.com"}'
 ```
 
-Response includes `api_key` for authentication.
+Response includes `checkout_url` to complete payment and receive API key.
 
 ---
 
@@ -46,7 +46,8 @@ curl http://localhost:8000/health
 **Response:**
 ```json
 {
-  "status": "ok"
+  "status": "ok",
+  "model_loaded": false
 }
 ```
 
@@ -105,6 +106,7 @@ curl -X POST http://localhost:8000/v1/completions \
 **Response:**
 ```json
 {
+  "prompt": "def fibonacci(",
   "completion": "n):\n    if n <= 1:\n        return n\n    else:\n        return fibonacci(n-1) + fibonacci(n-2)",
   "tokens_used": 28,
   "latency_ms": 145.3,
@@ -116,6 +118,7 @@ curl -X POST http://localhost:8000/v1/completions \
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `prompt` | string | The original prompt that was submitted |
 | `completion` | string | The generated code completion |
 | `tokens_used` | integer | Number of tokens consumed |
 | `latency_ms` | float | API response time in milliseconds |
@@ -200,7 +203,8 @@ curl -H "Authorization: Bearer test_key_12345" \
 **Request Body:**
 ```json
 {
-  "email": "user@example.com"
+  "price_id": "price_1234567890",
+  "customer_email": "user@example.com"
 }
 ```
 
@@ -208,7 +212,7 @@ curl -H "Authorization: Bearer test_key_12345" \
 ```bash
 curl -X POST http://localhost:8000/billing/subscribe \
   -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com"}'
+  -d '{"price_id": "price_1234567890", "customer_email": "user@example.com"}'
 ```
 
 **Response:**
@@ -312,8 +316,8 @@ All errors return JSON with status code and error detail:
 | Status | Error | Solution |
 |--------|-------|----------|
 | 400 | "Invalid max_tokens: must be 1-512" | Adjust max_tokens parameter |
-| 401 | "Authorization header missing" | Add Authorization header with Bearer token |
-| 401 | "Invalid API key" | Check API key is correct |
+| 401 | "Missing API key" | Add Authorization header with Bearer token |
+| 401 | "Invalid API key format" | Ensure Authorization header starts with "Bearer " |
 | 429 | "Rate limit exceeded" | Wait before retrying or upgrade tier |
 | 500 | "Internal server error" | Retry with exponential backoff |
 
@@ -374,7 +378,7 @@ curl -H "Authorization: Bearer test_key_12345" \
 ```bash
 curl -X POST http://localhost:8000/billing/subscribe \
   -H "Content-Type: application/json" \
-  -d '{"email": "newuser@example.com"}' | jq '.checkout_url'
+  -d '{"price_id": "price_1234567890", "customer_email": "newuser@example.com"}' | jq '.checkout_url'
 ```
 
 ---

@@ -22,6 +22,7 @@ class CompletionRequest(BaseModel):
     max_tokens: int = 100
     temperature: float = 0.7
     top_p: float = 0.95
+    stop: list[str] = []
 
 
 class CompletionResponse(BaseModel):
@@ -29,6 +30,7 @@ class CompletionResponse(BaseModel):
     completion: str
     tokens_used: int
     latency_ms: float
+    stop_reason: str
 
 
 class HealthResponse(BaseModel):
@@ -93,6 +95,7 @@ async def completions(request: CompletionRequest, api_key: str = Depends(get_api
             completion=completion,
             tokens_used=tokens_used,
             latency_ms=latency_ms,
+            stop_reason="length",
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
