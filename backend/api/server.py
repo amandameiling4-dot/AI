@@ -74,18 +74,51 @@ async def completions(request: CompletionRequest, api_key: str = Depends(get_api
         # Tokenize and generate
         start_time = time.time()
         inputs = tokenizer(request.prompt, return_tensors="pt").to(model.device)
+        
+        # Prepare generation kwargs
+        generation_kwargs = {
+            "max_new_tokens": request.max_tokens,
+            "temperature": request.temperature,
+            "top_p": request.top_p,
+        }
+        
+        # Add stop sequences if provided
+        if request.stop:
+            # Encode stop sequences as additional eos tokens
+            stop_token_ids = []
+            for stop_seq in request.stop:
+                stop_tokens = tokenizer.encode(stop_seq, add_special_tokens=False)
+                if stop_tokens:
+                    stop_token_ids.extend(stop_tokens)
+            if stop_token_ids:
+                # Add to existing eos_token_id
+                eos_token_id = tokenizer.eos_token_id
+                if isinstance(eos_token_id, int):
+                    eos_token_id = [eos_token_id]
+                elif eos_token_id is None:
+                    eos_token_id = []
+                generation_kwargs["eos_token_id"] = list(set(eos_token_id + stop_token_ids))
+        
         with torch.no_grad():
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=request.max_tokens,
-                temperature=request.temperature,
-                top_p=request.top_p,
-            )
+            outputs = model.generate(**inputs, **generation_kwargs)
+        
         completion = tokenizer.decode(outputs[0], skip_special_tokens=True)
         latency_ms = (time.time() - start_time) * 1000
 
         # Count tokens for billing
         tokens_used = len(outputs[0])
+        
+        # Determine stop reason
+        stop_reason = "length"
+        if request.stop:
+            for stop_seq in request.stop:
+                if stop_seq in completion:
+                    stop_reason = "stop_token"
+                    break
+        # Check if EOS token was hit
+        if tokenizer.eos_token_id and tokenizer.eos_token_id in outputs[0]:
+            if len(outputs[0]) < request.max_tokens + len(inputs[0]):
+                stop_reason = "eos"
 
         # Log usage (stub - real DB write needed)
         # await log_usage(api_key, tokens_used)
@@ -95,7 +128,7 @@ async def completions(request: CompletionRequest, api_key: str = Depends(get_api
             completion=completion,
             tokens_used=tokens_used,
             latency_ms=latency_ms,
-            stop_reason="length",
+            stop_reason=stop_reason,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
