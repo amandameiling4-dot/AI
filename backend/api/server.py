@@ -7,8 +7,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from fastapi import FastAPI, HTTPException, Header, Depends
 from pydantic import BaseModel
 
-# Billing integration (stub)
-from backend.billing.models import UsageRecord  # keep if used elsewhere
+# Billing integration (stub) - commented out as UsageRecord is not used
+# from backend.billing.models import UsageRecord  # keep if used elsewhere
 
 app = FastAPI(title="Code AI Server", version="0.1.0")
 

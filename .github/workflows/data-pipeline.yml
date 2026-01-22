@@ -36,7 +36,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          if [ -f requirements-api.txt ]; then pip install -r requirements-api.txt; fi
+          if [ -f requirements-monitoring.txt ]; then pip install -r requirements-monitoring.txt; fi
+          if [ -f requirements-train.txt ]; then pip install -r requirements-train.txt; fi
           python -m pip install pytest
+
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Run unit tests
         run: pytest -q
