@@ -1,8 +1,9 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -16,22 +17,64 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# PyTest
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
 .pytest_cache/
 
-# Virtual environments
-venv/
+# Environments
+.env
+.venv
 env/
+venv/
 ENV/
+env.bak/
+venv.bak/
 
-# IDE
+# IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Data files
+data/*.json
+data/*.csv
+data/*.txt
+!data/README.md
+
+# Model files
+*.pt
+*.pth
+*.ckpt
+*.bin
+models/
+
+# Logs
+*.log
+logs/
