@@ -1,0 +1,3 @@
+# Base requirements for the AI project
+fastapi>=0.100.0
+httpx>=0.24.0
