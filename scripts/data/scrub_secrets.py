@@ -1,3 +1,5 @@
+import re
+
 def find_matches(text, patterns):
     """
     Find and return a list of matches in the given text.
@@ -5,7 +7,6 @@ def find_matches(text, patterns):
     :param patterns: List of regex patterns to match.
     :return: List of matches.
     """
-    import re
     matches = []
     for pattern in patterns:
         matches.extend(re.findall(pattern, text))
@@ -18,14 +19,12 @@ def redact_text(text, patterns=None):
     :param patterns: Optional list of regex patterns for matching. If None, uses default patterns.
     :return: Tuple of (redacted_text, matches) where matches is a list of (secret_type, matched_value) tuples.
     """
-    import re
-    
     # Default patterns with secret types
     default_patterns = [
         ('email', r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
         ('git_token', r'\b(gh[ps]_[A-Za-z0-9]{36,})\b'),
         ('aws_key', r'\b(AKIA[A-Z0-9]{16})\b'),
-        ('jwt', r'\beyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_.-]+'),
+        ('jwt', r'\beyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+'),
         ('credit_card', r'\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b|\b\d{13,16}\b'),
         ('phone', r'(\+\d{1,3}[\s-]?\d{1,4}[\s-]?\d{1,4}[\s-]?\d{1,4}|\(\d{3}\)[\s-]?\d{3}[\s-]?\d{4}|\d{3}[\s-]\d{3}[\s-]\d{4})'),
         ('generic_token', r'\b[A-Za-z0-9]{16,}\b'),
