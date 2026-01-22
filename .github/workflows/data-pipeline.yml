@@ -76,6 +76,9 @@ jobs:
           if [ -f requirements-dev. txt ]; then pip install -r requirements-dev.txt; fi
           python -m pip install pytest
 
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
       - name: Run unit tests
         run: |
           export PYTHONPATH=$PYTHONPATH:$(pwd)
