@@ -1,2 +1,2 @@
-fastapi
-httpx
+fastapi>=0.100.0
+httpx>=0.24.0
