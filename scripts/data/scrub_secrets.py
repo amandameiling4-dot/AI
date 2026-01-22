@@ -11,16 +11,46 @@ def find_matches(text, patterns):
         matches.extend(re.findall(pattern, text))
     return matches
 
-def redact_text(text, patterns):
+def redact_text(text, patterns=None):
     """
-    Replace any matches in the text with '[REDACTED]'.
+    Replace any matches in the text with '[REDACTED]' and return matches with types.
     :param text: The text where matches will be redacted.
-    :param patterns: List of regex patterns for matching.
-    :return: Redacted text.
+    :param patterns: Optional list of regex patterns for matching. If None, uses default patterns.
+    :return: Tuple of (redacted_text, matches) where matches is a list of (secret_type, matched_value) tuples.
     """
-    for pattern in patterns:
-        text = re.sub(pattern, '[REDACTED]', text)
-    return text
+    import re
+    
+    # Default patterns with secret types
+    default_patterns = [
+        ('email', r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
+        ('git_token', r'\b(gh[ps]_[A-Za-z0-9]{36,})\b'),
+        ('aws_key', r'\b(AKIA[A-Z0-9]{16})\b'),
+        ('jwt', r'\beyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_.-]+'),
+        ('credit_card', r'\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b|\b\d{13,16}\b'),
+        ('phone', r'(\+\d{1,3}[\s-]?\d{1,4}[\s-]?\d{1,4}[\s-]?\d{1,4}|\(\d{3}\)[\s-]?\d{3}[\s-]?\d{4}|\d{3}[\s-]\d{3}[\s-]\d{4})'),
+        ('generic_token', r'\b[A-Za-z0-9]{16,}\b'),
+    ]
+    
+    # Use provided patterns or defaults
+    if patterns is not None:
+        # If patterns is a simple list of regex strings, use them without types
+        pattern_list = [('pattern', p) for p in patterns]
+    else:
+        pattern_list = default_patterns
+    
+    # Find all matches with their types
+    matches = []
+    for secret_type, pattern in pattern_list:
+        found = re.findall(pattern, text)
+        for match in found:
+            matches.append((secret_type, match))
+    
+    # Redact text using all patterns
+    redacted = text
+    for secret_type, pattern in pattern_list:
+        redacted = re.sub(pattern, '[REDACTED]', redacted)
+    
+    return redacted, matches
 
 # Example usage
 if __name__ == '__main__':
@@ -28,5 +58,6 @@ if __name__ == '__main__':
     patterns = [r'secret', r'sensitive']
     matches = find_matches(sample_text, patterns)
     print(f'Matches found: {matches}')
-    redacted = redact_text(sample_text, patterns)
+    redacted, detected = redact_text(sample_text, patterns)
     print(f'Redacted text: {redacted}')
+    print(f'Detected secrets: {detected}')
