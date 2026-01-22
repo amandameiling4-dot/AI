@@ -102,23 +102,26 @@ async def completions(request: CompletionRequest, api_key: str = Depends(get_api
         with torch.no_grad():
             outputs = model.generate(**inputs, **generation_kwargs)
         
-        completion = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        # Decode only the generated tokens (excluding the prompt)
+        generated_tokens = outputs[0][len(inputs[0]):]
+        completion = tokenizer.decode(generated_tokens, skip_special_tokens=True)
         latency_ms = (time.time() - start_time) * 1000
 
-        # Count tokens for billing
-        tokens_used = len(outputs[0])
+        # Count only generated tokens for billing
+        tokens_used = len(generated_tokens)
         
-        # Determine stop reason
+        # Determine stop reason (check EOS first, then stop sequences)
         stop_reason = "length"
-        if request.stop:
+        # Check if EOS token was hit before max_tokens
+        if tokenizer.eos_token_id and tokenizer.eos_token_id in generated_tokens:
+            if len(generated_tokens) < request.max_tokens:
+                stop_reason = "eos"
+        # Check if completion ends with any stop sequence
+        if stop_reason == "length" and request.stop:
             for stop_seq in request.stop:
-                if stop_seq in completion:
+                if completion.endswith(stop_seq):
                     stop_reason = "stop_token"
                     break
-        # Check if EOS token was hit
-        if tokenizer.eos_token_id and tokenizer.eos_token_id in outputs[0]:
-            if len(outputs[0]) < request.max_tokens + len(inputs[0]):
-                stop_reason = "eos"
 
         # Log usage (stub - real DB write needed)
         # await log_usage(api_key, tokens_used)
