@@ -1,3 +1,5 @@
+import re
+
 def find_matches(text, patterns):
     """
     Find and return a list of matches in the given text.
@@ -5,7 +7,6 @@ def find_matches(text, patterns):
     :param patterns: List of regex patterns to match.
     :return: List of matches.
     """
-    import re
     matches = []
     for pattern in patterns:
         matches.extend(re.findall(pattern, text))
