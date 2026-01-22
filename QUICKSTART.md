@@ -61,7 +61,7 @@ curl http://localhost:8000/health
 # Via Stripe billing endpoint
 curl -X POST http://localhost:8000/billing/subscribe \
   -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com"}'
+  -d '{"price_id": "price_1234567890", "customer_email": "user@example.com"}'
 
 # Or for local testing, generate a test token:
 # See backend/api/server.py - hardcoded test key: "test_key_12345"
