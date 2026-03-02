@@ -1,8 +1,6 @@
 from typing import Optional
 import os
 import time
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
 
 from fastapi import FastAPI, HTTPException, Header, Depends
 from pydantic import BaseModel
@@ -47,6 +45,8 @@ def get_api_key(authorization: Optional[str] = Header(None)) -> str:
 
 def load_model(model_name: str = "bigcode/starcoder-base"):
     """Load model (with caching)."""
+    import torch
+    from transformers import AutoTokenizer, AutoModelForCausalLM
     global _MODEL, _TOKENIZER
     if _MODEL is None:
         _TOKENIZER = AutoTokenizer.from_pretrained(model_name, use_fast=True)
@@ -68,6 +68,7 @@ async def completions(request: CompletionRequest, api_key: str = Depends(get_api
     try:
         # Load model
         model, tokenizer = load_model()
+        import torch
 
         # Tokenize and generate
         start_time = time.time()
