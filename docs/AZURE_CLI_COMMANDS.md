@@ -14,6 +14,110 @@ The codebase is healthy from the local verification run:
 
 The only deployment-specific caution is that PostgreSQL and Redis connections should use TLS-enabled connection strings in Azure.
 
+## Secret setup in Azure (step by step)
+
+### Option A: Set secrets with Azure CLI
+
+1. Create strong values for each secret locally, but avoid echoing them into shell history.
+
+```bash
+export JWT_SECRET_KEY='replace-with-long-random-secret'
+export API_TOKEN='replace-with-api-token'
+export POSTGRES_PASSWORD='ChangeMe123!'
+export REDIS_KEY='replace-with-redis-key'
+```
+
+2. Store them as Container Apps secrets.
+
+```bash
+az containerapp secret set \
+  --name "$CONTAINER_APP" \
+  --resource-group "$RESOURCE_GROUP" \
+  --secrets \
+    jwt-secret="$JWT_SECRET_KEY" \
+    api-token="$API_TOKEN" \
+    postgres-password="$POSTGRES_PASSWORD" \
+    redis-key="$REDIS_KEY"
+```
+
+3. Attach those secrets to the app environment variables.
+
+```bash
+az containerapp update \
+  --name "$CONTAINER_APP" \
+  --resource-group "$RESOURCE_GROUP" \
+  --set-env-vars \
+    JWT_SECRET_KEY=secretref:jwt-secret \
+    API_TOKEN=secretref:api-token \
+    DATABASE_URL="postgresql://postgres:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB?sslmode=require" \
+    REDIS_URL="rediss://:$REDIS_KEY@$REDIS_HOST:6380"
+```
+
+4. Verify the app has the expected values.
+
+```bash
+az containerapp show \
+  --name "$CONTAINER_APP" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query "properties.template.containers[0].env" -o json
+```
+
+### Option B: Set secrets in the Azure portal
+
+1. Open the Azure portal and go to your Container App.
+2. Open the "Secrets" blade.
+3. Click "Add" and create a secret name such as `jwt-secret`.
+4. Paste the secret value and save it.
+5. Open "Containers" > your container > "Environment variables".
+6. Add each variable and select the corresponding secret reference.
+7. Save and restart the container app.
+
+> Avoid storing secrets directly in source code, Dockerfiles, or plain shell history. Prefer Azure Container Apps secrets or Azure Key Vault.
+
+## TLS-enabled connection strings
+
+### PostgreSQL (Azure Database for PostgreSQL Flexible Server)
+
+Use the fully qualified server hostname and require TLS.
+
+```bash
+export POSTGRES_HOST="<your-postgres-server>.postgres.database.azure.com"
+export POSTGRES_DB="appdb"
+export POSTGRES_ADMIN_USER="postgres"
+export POSTGRES_ADMIN_PASSWORD='ChangeMe123!'
+```
+
+Example connection string:
+
+```bash
+DATABASE_URL="postgresql://$POSTGRES_ADMIN_USER:$POSTGRES_ADMIN_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB?sslmode=require"
+```
+
+Important notes:
+- The host must be the Azure PostgreSQL server FQDN, not `localhost`.
+- Use `sslmode=require` so the client negotiates TLS.
+- If your app uses SQLAlchemy, the URL can also be written as `postgresql+psycopg2://...` depending on the driver you installed.
+
+### Redis (Azure Cache for Redis)
+
+Azure Cache for Redis requires TLS. Use the `rediss://` scheme and port `6380`.
+
+```bash
+export REDIS_HOST="<your-redis-name>.redis.cache.windows.net"
+export REDIS_KEY='replace-with-redis-key'
+```
+
+Example connection string:
+
+```bash
+REDIS_URL="rediss://:$REDIS_KEY@$REDIS_HOST:6380"
+```
+
+Important notes:
+- Use `rediss://` instead of `redis://`.
+- Use port `6380` for TLS.
+- If your Redis client requires a username, add it before the password in the URL form.
+
 ## 1. Login and register providers
 
 ```bash
