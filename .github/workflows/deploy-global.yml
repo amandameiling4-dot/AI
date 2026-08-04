@@ -1,0 +1,21 @@
+name: Deploy Global Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate config
+        run: |
+          test -f Dockerfile
+          test -f docker-compose.yml
+      - name: Build image
+        run: |
+          docker build -t ai-app:latest .
+      - name: Deploy placeholder
+        run: |
+          echo "Deployment hook goes here; configure your target host secrets and deployment command." 

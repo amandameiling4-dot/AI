@@ -1,0 +1,21 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Build and push image
+        run: |
+          az acr build --registry ${{ secrets.ACR_NAME }} --image ai-app:latest .
+      - name: Deploy placeholder
+        run: |
+          echo "Set your Azure app name and deployment command in the workflow secrets or replace this step with az webapp deploy or az containerapp update."
