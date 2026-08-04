@@ -1,6 +1,6 @@
 """Metrics collection and monitoring utilities."""
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 import json
 from pathlib import Path
@@ -23,7 +23,7 @@ class MetricsCollector:
     ):
         """Record an inference request."""
         record = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "api_key": api_key[:16] + "***" if len(api_key) > 16 else api_key,  # Redact
             "tokens": tokens_generated,
             "latency_ms": latency_ms,
@@ -36,7 +36,7 @@ class MetricsCollector:
     def record_error(self, api_key: str, error_type: str, model: str = "starcoder"):
         """Record an error."""
         record = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "api_key": api_key[:16] + "***",
             "error_type": error_type,
             "model": model,
@@ -50,7 +50,7 @@ class MetricsCollector:
         if not self.metrics_file.exists():
             return {"total_requests": 0, "errors": 0, "avg_latency_ms": 0, "total_tokens": 0}
 
-        cutoff_time = datetime.utcnow().timestamp() - (hours * 3600)
+        cutoff_time = datetime.now(timezone.utc).timestamp() - (hours * 3600)
         success_count = 0
         error_count = 0
         total_tokens = 0
@@ -62,7 +62,10 @@ class MetricsCollector:
                     record = json.loads(line)
                     ts_str = record.get("timestamp", "")
                     try:
-                        ts = datetime.fromisoformat(ts_str).timestamp()
+                        ts_dt = datetime.fromisoformat(ts_str)
+                        if ts_dt.tzinfo is None:
+                            ts_dt = ts_dt.replace(tzinfo=timezone.utc)
+                        ts = ts_dt.timestamp()
                     except Exception:
                         # skip records with unparseable timestamps
                         continue
