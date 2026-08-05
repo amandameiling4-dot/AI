@@ -267,3 +267,126 @@ az containerapp logs show --name "$CONTAINER_APP" --resource-group "$RESOURCE_GR
 - Replace the secret values before deployment.
 - If you use a stricter firewall policy, allow inbound access to the PostgreSQL and Redis endpoints from the Container Apps environment.
 - The locally verified app health is good; the remaining deployment risk is cloud networking and secret configuration rather than code errors.
+
+## GitHub Actions deployment setup
+
+This project includes a ready-to-run Azure deployment workflow at `.github/workflows/deploy-azure.yml`.
+
+### Required repository secrets
+
+Set these secrets in GitHub repo Settings > Secrets > Actions:
+- `AZURE_CREDENTIALS`: the JSON output from `az ad sp create-for-rbac ... --sdk-auth`
+- `ACR_NAME`: the Azure Container Registry name (e.g. `aiacr123`)
+- `AZURE_RESOURCE_GROUP`: the resource group name
+- `AZURE_LOCATION`: the Azure region (for example `eastus`)
+- `AZURE_CONTAINER_ENV`: the Container Apps environment name
+- `AZURE_CONTAINER_APP`: the Container App name
+- `DATABASE_URL`: TLS-enabled PostgreSQL string, for example:
+  `postgresql://postgres:<password>@<server>.postgres.database.azure.com:5432/appdb?sslmode=require`
+- `JWT_SECRET_KEY`: your production JWT secret
+- `API_TOKEN`: your API bearer token
+- `REDIS_URL`: TLS-enabled Redis string, for example:
+  `rediss://:<key>@<server>.redis.cache.windows.net:6380`
+
+### Exact commands to create the service principal and secrets
+
+```bash
+# Authenticate to Azure and choose the subscription
+az login
+az account list --all -o table
+az account set --subscription "<SUBSCRIPTION_ID>"
+
+# Create a service principal with Contributor access to the subscription
+az ad sp create-for-rbac \
+  --name "ai-app-sp" \
+  --role "Contributor" \
+  --scopes "/subscriptions/<SUBSCRIPTION_ID>" \
+  --sdk-auth > azure-credentials.json
+
+# Store the credentials as a GitHub Actions secret
+cat azure-credentials.json | gh secret set AZURE_CREDENTIALS --repo amandameiling4-dot/AI --body -
+
+# Store the ACR name as a GitHub Actions secret
+gh secret set ACR_NAME --repo amandameiling4-dot/AI --body "<your-acr-name>"
+```
+
+### Exact commands to provision Azure resources manually
+
+```bash
+export RESOURCE_GROUP=ai-rg
+export LOCATION=eastus
+export ACR_NAME=<your-acr-name>
+export CONTAINER_ENV=ai-env
+export CONTAINER_APP=ai-api
+export POSTGRES_SERVER=<your-postgres-server>
+export POSTGRES_DB=appdb
+export POSTGRES_ADMIN_USER=postgres
+export POSTGRES_ADMIN_PASSWORD='<your-password>'
+export REDIS_NAME=<your-redis-name>
+export REDIS_KEY='<your-redis-key>'
+
+az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+
+az acr create \
+  --resource-group "$RESOURCE_GROUP" \
+  --name "$ACR_NAME" \
+  --sku Basic \
+  --admin-enabled true
+
+az postgres flexible-server create \
+  --resource-group "$RESOURCE_GROUP" \
+  --name "$POSTGRES_SERVER" \
+  --location "$LOCATION" \
+  --admin-user "$POSTGRES_ADMIN_USER" \
+  --admin-password "$POSTGRES_ADMIN_PASSWORD" \
+  --sku-name Standard_B1ms \
+  --version 16 \
+  --storage-size 32 \
+  --public-access 0.0.0.0 \
+  --database-name "$POSTGRES_DB"
+
+az redis create \
+  --name "$REDIS_NAME" \
+  --resource-group "$RESOURCE_GROUP" \
+  --location "$LOCATION" \
+  --sku Basic \
+  --vm-size C0
+```
+
+### Exact commands to run the GitHub Actions workflow
+
+After adding the secrets and pushing the branch, trigger the workflow by pushing to `main` or using the `workflow_dispatch` button in GitHub Actions.
+
+If you want to deploy manually from the CLI instead, use:
+
+```bash
+az acr login --name "$ACR_NAME"
+az acr build --registry "$ACR_NAME" --image ai-app:latest .
+
+az containerapp env create \
+  --name "$CONTAINER_ENV" \
+  --resource-group "$RESOURCE_GROUP" \
+  --location "$LOCATION"
+
+az containerapp create \
+  --name "$CONTAINER_APP" \
+  --resource-group "$RESOURCE_GROUP" \
+  --environment "$CONTAINER_ENV" \
+  --image "$ACR_NAME.azurecr.io/ai-app:latest" \
+  --target-port 8000 \
+  --ingress external \
+  --cpu 0.5 \
+  --memory 1.0Gi \
+  --registry-server "$ACR_NAME.azurecr.io" \
+  --registry-username "<acr-username>" \
+  --registry-password "<acr-password>" \
+  --env-vars \
+    DATABASE_URL="${DATABASE_URL}" \
+    JWT_SECRET_KEY="${JWT_SECRET_KEY}" \
+    API_TOKEN="${API_TOKEN}" \
+    REDIS_URL="${REDIS_URL}"
+```
+
+### Important note
+
+This GitHub Actions workflow only deploys the container app and requires the Azure resources to already exist or to be provisioned separately. If your Azure account currently has no subscription, you must first enable a subscription before this workflow can apply the deployment.
